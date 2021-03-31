@@ -32,6 +32,11 @@ const AuthorType = new GraphQLObjectType({
     fields: () => ({
         id: { type: GraphQLNonNull(GraphQLInt) },
         name: { type: GraphQLNonNull(GraphQLString) },
+        books: { type: new GraphQLList(BookType),
+        resolve: () => {
+            return books.filter(book => book.id === author.id)
+        }
+        }
     })
 })
 
@@ -40,10 +45,26 @@ const RootQueryType = new GraphQLObjectType({
     name: 'Query',
     description: 'Root Query',
     fields: () => ({
+        book: {
+            type: BookType,
+            description: 'A Single Book',
+            args: {
+                id: { type: GraphQLInt }
+            },
+            resolve: (parent,args) => books.find(book => book.id === args.id)
+        },
         books: {
             type: new GraphQLList(BookType),
             description:'List of All Books',
             resolve: () => books //would be a database
+        },
+        author: {
+            type: AuthorType,
+            description: "This is an Author of a Book",
+            args: {
+                id: { type: GraphQLInt }
+            },
+            resolve: (parent, args) => authors.find(author => author.id === args.id)
         },
         authors: {
             type: new GraphQLList(AuthorType),
@@ -53,8 +74,29 @@ const RootQueryType = new GraphQLObjectType({
     })
 })
 
+const RootMutationType = new GraphQLObjectType({
+    name: 'Mutation',
+    description: 'Root Mutation',
+    fields: () = ({
+        addBook: {
+            type: BookType,
+            description: 'Add a Book',
+            args: {
+                name: { type: GraphQLNonNull(GraphQLString) },
+                authorId: { type: GraphQLNonNull(GraphQLInt) }
+            },
+            resolve: (parent,args) => {
+                const book = { id: books.length + 1, name: args.name, authorId: args.authorId }
+                books.push(book)
+                return book
+            }
+        }
+    })
+})
+
 const schema = new GraphQLSchema({
-    query: RootQueryType
+    query: RootQueryType,
+    mutation: RootMutationType
 })
 
 const authors = [
